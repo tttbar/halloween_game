@@ -1,0 +1,15 @@
+# Core backend
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+
+# Speech-to-text (GPU-accelerated Whisper). Pulls in av + ctranslate2.
+faster-whisper==1.1.1
+
+# Generous fuzzy answer matching
+rapidfuzz==3.11.0
+
+# Required by faster-whisper's audio decoding path
+numpy>=1.26,<3
+
+# Ollama is called over HTTP (stdlib urllib) -- no python client needed.
