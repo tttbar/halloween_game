@@ -19,7 +19,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from judge import grade
+from judge import grade, grade_tap
 from stt import transcriber
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
@@ -76,7 +76,7 @@ def answer_tap(body: TapAnswer) -> dict:
     riddle = _BY_ID.get(body.riddle_id)
     if riddle is None:
         return {"correct": False, "method": "unknown-riddle", "transcript": ""}
-    result = grade(riddle["question"], riddle["answers"], body.choice)
+    result = grade_tap(riddle["answers"], body.choice)
     result["transcript"] = body.choice
     return result
 

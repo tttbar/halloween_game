@@ -127,3 +127,10 @@ def grade(question: str, answers: list[str], transcript: str) -> dict:
 
     # Ollama unavailable: fall back to the fuzzy result.
     return {"correct": matched, "method": "fuzzy-only", "score": score}
+
+
+def grade_tap(answers: list[str], choice: str) -> dict:
+    """Grade a tapped multiple-choice answer: exact match only, no LLM."""
+    norm = _normalize(choice)
+    correct = bool(norm) and any(norm == _normalize(a) for a in answers)
+    return {"correct": correct, "method": "tap", "score": 100.0 if correct else 0.0}

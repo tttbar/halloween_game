@@ -26,6 +26,10 @@ const TRY_AGAIN_LINES = [
   "So close! Have another guess!",
 ];
 
+// Tap-only by default (reliable in a noisy room). Add ?voice=1 to the URL to
+// also enable the hold-to-talk microphone button.
+const VOICE_ENABLED = new URLSearchParams(window.location.search).get("voice") === "1";
+
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -34,11 +38,12 @@ export default function App() {
   const [riddles, setRiddles] = useState([]);
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState(PHASE.ATTRACT);
-  const [showChoices, setShowChoices] = useState(false);
+  const canRecord = VOICE_ENABLED && supportsRecording();
+  const [showChoices, setShowChoices] = useState(!canRecord);
+  const [wrongChoices, setWrongChoices] = useState([]);
   const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState("");
   const pttRef = useRef(null);
-  const canRecord = supportsRecording();
 
   const riddle = riddles[index];
 
@@ -62,12 +67,15 @@ export default function App() {
   const askRiddle = useCallback(
     (r) => {
       if (!r) return;
-      setShowChoices(false);
+      setShowChoices(!canRecord);
+      setWrongChoices([]);
       setTranscript("");
       setPhase(PHASE.ASKING);
-      speak(r.question, { onEnd: () => setPhase(PHASE.AWAITING) });
+      speak(r.question, {
+        onEnd: () => setPhase((p) => (p === PHASE.ASKING ? PHASE.AWAITING : p)),
+      });
     },
-    []
+    [canRecord]
   );
 
   // Start button: unlock audio + mic, then ask the first riddle.
@@ -101,7 +109,7 @@ export default function App() {
       setPhase(PHASE.WRONG);
       speak(pick(TRY_AGAIN_LINES), {
         // After the encourage line, let them try again on the same riddle.
-        onEnd: () => setPhase(PHASE.AWAITING),
+        onEnd: () => setPhase((p) => (p === PHASE.WRONG ? PHASE.AWAITING : p)),
       });
     }
   }, []);
@@ -139,7 +147,8 @@ export default function App() {
 
   // ---- Tap-to-answer ----
   const tapAnswer = async (choice) => {
-    if (phase !== PHASE.AWAITING) return;
+    if (phase !== PHASE.AWAITING && phase !== PHASE.ASKING) return;
+    stopSpeaking();
     setPhase(PHASE.THINKING);
     try {
       const r = await fetch("/api/answer/tap", {
@@ -148,7 +157,7 @@ export default function App() {
         body: JSON.stringify({ riddle_id: riddle.id, choice }),
       });
       const verdict = await r.json();
-      setTranscript(choice);
+      if (!verdict.correct) setWrongChoices((w) => [...w, choice]);
       showResult(!!verdict.correct);
     } catch {
       setStatus("Could not reach the ghost's brain.");
@@ -175,8 +184,8 @@ export default function App() {
         case "r": // repeat current riddle
           repeat();
           break;
-        case "t": // toggle choices
-          setShowChoices((s) => !s);
+        case "t": // toggle choices (voice mode only)
+          if (canRecord) setShowChoices((s) => !s);
           break;
         case "h": // speak hint
           if (riddle?.hint) speak(riddle.hint);
@@ -187,7 +196,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, riddle, showResult, nextRiddle, repeat]);
+  }, [phase, riddle, canRecord, showResult, nextRiddle, repeat]);
 
   // ---- Render ----
   if (phase === PHASE.ATTRACT) {
@@ -222,7 +231,7 @@ export default function App() {
       </div>
 
       {/* Answer controls */}
-      {(phase === PHASE.AWAITING || phase === PHASE.LISTENING) && (
+      {(phase === PHASE.AWAITING || phase === PHASE.LISTENING || (phase === PHASE.ASKING && !canRecord)) && (
         <div className="controls">
           {canRecord && (
             <button
@@ -243,14 +252,21 @@ export default function App() {
             </button>
           )}
 
-          <button className="link-btn" onClick={() => setShowChoices((s) => !s)}>
-            {showChoices ? "Hide choices" : "Too shy? Tap your answer 👉"}
-          </button>
+          {canRecord && (
+            <button className="link-btn" onClick={() => setShowChoices((s) => !s)}>
+              {showChoices ? "Hide choices" : "Too shy? Tap your answer 👉"}
+            </button>
+          )}
 
           {showChoices && (
             <div className="choices">
               {(riddle?.choices || []).map((c) => (
-                <button key={c} className="choice-btn" onClick={() => tapAnswer(c)}>
+                <button
+                  key={c}
+                  className="choice-btn"
+                  disabled={wrongChoices.includes(c)}
+                  onClick={() => tapAnswer(c)}
+                >
                   {c}
                 </button>
               ))}
@@ -267,7 +283,7 @@ export default function App() {
         </button>
       )}
 
-      {transcript && phase !== PHASE.CORRECT && (
+      {canRecord && transcript && phase !== PHASE.CORRECT && (
         <p className="heard">I heard: “{transcript}”</p>
       )}
       {status && <p className="status">{status}</p>}

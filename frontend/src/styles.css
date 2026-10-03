@@ -265,6 +265,10 @@ h1 {
 .choice-btn:hover {
   background: rgba(90, 50, 150, 0.9);
 }
+.choice-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 .choice-btn:active {
   transform: scale(0.95);
 }
