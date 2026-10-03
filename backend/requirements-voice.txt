@@ -1,0 +1,6 @@
+# Optional: only for voice mode (?voice=1). Install with:
+#   backend/.venv/bin/pip install -r backend/requirements-voice.txt
+# Also requires `ollama pull llama3.2:3b` for the answer judge.
+faster-whisper==1.1.1
+rapidfuzz==3.11.0
+numpy>=1.26,<3
