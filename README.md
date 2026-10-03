@@ -1,11 +1,14 @@
 # 👻 Spooky AI Ghost Riddle Booth
 
 An AI-powered Halloween game for the **Innovation Lab** carnival table. *Gus the
-Ghost* appears on your 43" screen and asks kids spooky riddles. Confident kids
-**hold a button and answer out loud** (recorded, transcribed with Whisper, and
-judged by a local Ollama model). Shy or very young kids tap **"Too shy? Tap your
-answer"** for big picture-choice buttons. Get it right and Gus cheers
-*"Trick or treat — grab a treat!"*
+Ghost* appears on your 43" screen, reads spooky riddles aloud, and kids **tap the
+right answer** from big buttons. Get it right and Gus cheers
+*"Trick or treat — grab a treat!"*; get it wrong and the button greys out so
+they can try another.
+
+Because carnivals are loud, **tap-only is the default**. Voice answers
+(microphone → Whisper → Ollama) are still built in as an opt-in extra: open the
+page with `?voice=1` (e.g. `http://localhost:5173/?voice=1`).
 
 Everything runs **locally on your computer** — no cloud, no internet required at
 the booth.
@@ -39,11 +42,11 @@ mumbles, you have tap-to-answer *and* hidden operator keys.
 ### 0. One-time prerequisites
 
 - **Python 3.10+**, **Node 18+**, and **Ollama** (you already have all three).
-- Pull the judge model (one time, needs internet):
+- *Only for voice mode (`?voice=1`):* pull the judge model once (needs internet):
   ```bash
   ollama pull llama3.2:3b
   ```
-  Make sure Ollama is running: `ollama serve` (it usually auto-starts).
+  Tap-only mode needs neither Ollama nor Whisper.
 
 ### 1. Run it
 
@@ -67,8 +70,8 @@ browsers require one click before audio can play).
 ## 🎮 Playing & operating
 
 **For the kids:**
-- **Hold** the big 🎤 "Hold to Answer" button, say the answer, then let go.
-- Or tap **"Too shy? Tap your answer 👉"** and pick a picture button.
+- Listen to Gus read the riddle, then **tap an answer** (you can tap while he's still talking).
+- *(Voice mode, `?voice=1` only)* **Hold** the 🎤 "Hold to Answer" button and say the answer.
 
 **For you (the operators)** — hidden controls, press **`** (backtick) or tap the
 tiny dot in the bottom-right corner to reveal the bar. Keyboard shortcuts work
@@ -81,10 +84,10 @@ anytime:
 | `N` | **Next** riddle |
 | `R` | **Repeat** / re-ask the current riddle |
 | `H` | Speak the **hint** |
-| `T` | Toggle the tap-to-answer choices |
+| `T` | Toggle the choices (voice mode only) |
 | `` ` `` | Show/hide the operator bar |
 
-> 💡 **The golden rule:** if the tech ever mishears a kid, just press **C** to
+> 💡 **The golden rule:** if a kid is stuck or frustrated, just press **C** to
 > let them win. No child should walk away sad because of a glitch.
 
 ---
@@ -113,8 +116,8 @@ Run through this the morning of:
 - [ ] `ollama serve` is running and `ollama list` shows `llama3.2:3b`.
 - [ ] Speaker plugged in, volume up; mic plugged in and close to kid height.
 - [ ] `./run.sh kiosk` started; page open in Chrome **fullscreen (F11)**.
-- [ ] Clicked **Start** once (unlocks mic + voice).
-- [ ] Test one riddle by **voice** and one by **tap**.
+- [ ] Clicked **Start** once (unlocks the ghost's voice).
+- [ ] Play through one riddle: tap a wrong answer, then the right one.
 - [ ] Confirm **C** and **X** keys work for operator override.
 - [ ] Disable the monitor's sleep/screensaver.
 - [ ] Have the candy bowl ready. 🍬
@@ -124,7 +127,7 @@ Run through this the morning of:
 | Problem | Fix |
 |---------|-----|
 | Ghost won't talk | Click anywhere / re-click **Start** — browsers block audio until a click. |
-| Mic not working | Grant Chrome mic permission; otherwise kids use **tap-to-answer**. |
+| Mic not working (voice mode) | Grant Chrome mic permission, or use the default tap mode. |
 | Answers misjudged | Press **C**/**X** to override; lower `FUZZY_THRESHOLD`. |
 | "Couldn't reach the ghost's brain" | Backend not running — check the `run.sh` terminal. |
 | Slow responses | Use `WHISPER_MODEL=tiny.en` and keep `llama3.2:3b`. |
