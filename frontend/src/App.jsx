@@ -138,7 +138,8 @@ export default function App() {
     setThinkingMsg("✨ Gus is conjuring a brand-new riddle…");
     setPhase(PHASE.THINKING);
     try {
-      const res = await fetch("/api/riddles/generate", { method: "POST" });
+      let res = await fetch("/api/riddles/generate", { method: "POST" });
+      if (!res.ok) res = await fetch("/api/riddles/generate", { method: "POST" });
       if (!res.ok) throw new Error("no riddle");
       const { riddle: made } = await res.json();
       setRiddles((rs) => [...rs.slice(0, index + 1), made, ...rs.slice(index + 1)]);

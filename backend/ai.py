@@ -102,14 +102,24 @@ def _make_riddle_once(avoid: list[str] | None = None) -> dict | None:
         return None
 
     # Reject anything shaky rather than show a kid a broken riddle.
-    if not (15 <= len(question) <= 220) or not question.endswith("?"):
+    if not question.endswith("?"):
+        # The model often forgets the closing line; add it rather than discard.
+        question = re.sub(r"[\s.!,;:]+$", "", question) + ". What am I?"
+    if not (15 <= len(question) <= 220):
+        log.info("Rejected riddle (length) for %r: %r", answer, question)
         return None
     answer_words = [w for w in answer.lower().split() if len(w) > 2]
-    if any(w in question.lower() for w in answer_words):
-        return None  # gave away the answer
-    if any(w in hint.lower() for w in answer_words):
+    def mentions(text: str) -> bool:
+        # Whole words (plus plurals) so "cat" doesn't match "catch".
+        return any(re.search(rf"\b{re.escape(w)}(s|es)?\b", text.lower()) for w in answer_words)
+
+    if mentions(question):
+        log.info("Rejected riddle (gave away %r): %r", answer, question)
+        return None
+    if mentions(hint):
         hint = ""
     if _BLOCKED.search(f"{question} {hint}"):
+        log.info("Rejected riddle (blocked word) for %r: %r", answer, question)
         return None
 
     return {
