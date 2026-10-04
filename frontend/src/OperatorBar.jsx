@@ -5,13 +5,14 @@ import React, { useEffect, useState } from "react";
  * Hidden by default; press the backtick (`) key or tap the tiny corner dot to
  * reveal. Buttons mirror the keyboard shortcuts so either works.
  *
- * Shortcuts:  C=correct  X=wrong  N=next  R=repeat  H=hint  T=toggle choices
+ * Shortcuts:  C=correct  X=wrong  N=next  R=repeat  H=hint  G=AI riddle  T=toggle choices
  */
 export default function OperatorBar({
   onCorrect,
   onWrong,
   onNext,
   onRepeat,
+  onConjure,
   onHint,
   riddleNumber,
   total,
@@ -43,6 +44,7 @@ export default function OperatorBar({
           <button onClick={onCorrect}>✓ Correct (C)</button>
           <button onClick={onWrong}>✗ Wrong (X)</button>
           <button onClick={onRepeat}>↻ Repeat (R)</button>
+          <button onClick={onConjure}>✨ AI Riddle (G)</button>
           <button onClick={onHint}>💡 Hint (H)</button>
           <button onClick={onNext}>→ Next (N)</button>
         </div>

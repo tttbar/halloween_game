@@ -30,6 +30,20 @@ const TRY_AGAIN_LINES = [
 // also enable the hold-to-talk microphone button.
 const VOICE_ENABLED = new URLSearchParams(window.location.search).get("voice") === "1";
 
+// Ollama-written lines (fetched from the backend) are mixed in with these
+// built-in ones, which are the fallback when Ollama is off.
+const aiLines = { win: [], lose: [] };
+
+function refreshAiLines() {
+  fetch("/api/reactions")
+    .then((r) => r.json())
+    .then((d) => {
+      aiLines.win = d.win || [];
+      aiLines.lose = d.lose || [];
+    })
+    .catch(() => {});
+}
+
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -43,6 +57,7 @@ export default function App() {
   const [wrongChoices, setWrongChoices] = useState([]);
   const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState("");
+  const [thinkingMsg, setThinkingMsg] = useState("The ghost is thinking…");
   const pttRef = useRef(null);
 
   const riddle = riddles[index];
@@ -53,6 +68,7 @@ export default function App() {
       .then((r) => r.json())
       .then((d) => setRiddles(d.riddles || []))
       .catch(() => setStatus("Could not reach the ghost's brain (backend)."));
+    refreshAiLines();
   }, []);
 
   const ghostMood =
@@ -102,17 +118,39 @@ export default function App() {
 
   const showResult = useCallback((correct) => {
     stopSpeaking();
+    refreshAiLines();
     if (correct) {
       setPhase(PHASE.CORRECT);
-      speak(pick(WIN_LINES));
+      speak(pick([...aiLines.win, ...WIN_LINES]));
     } else {
       setPhase(PHASE.WRONG);
-      speak(pick(TRY_AGAIN_LINES), {
+      speak(pick([...aiLines.lose, ...TRY_AGAIN_LINES]), {
         // After the encourage line, let them try again on the same riddle.
         onEnd: () => setPhase((p) => (p === PHASE.WRONG ? PHASE.AWAITING : p)),
       });
     }
   }, []);
+
+  // Operator: have Ollama write a brand-new riddle and jump straight to it.
+  const conjureRiddle = useCallback(async () => {
+    stopSpeaking();
+    setStatus("");
+    setThinkingMsg("✨ Gus is conjuring a brand-new riddle…");
+    setPhase(PHASE.THINKING);
+    try {
+      const res = await fetch("/api/riddles/generate", { method: "POST" });
+      if (!res.ok) throw new Error("no riddle");
+      const { riddle: made } = await res.json();
+      setRiddles((rs) => [...rs.slice(0, index + 1), made, ...rs.slice(index + 1)]);
+      setIndex(index + 1);
+      askRiddle(made);
+    } catch {
+      setStatus("Gus couldn't think of a new riddle — carrying on with this one.");
+      setPhase(PHASE.AWAITING);
+    } finally {
+      setThinkingMsg("The ghost is thinking…");
+    }
+  }, [index, askRiddle]);
 
   // ---- Push-to-talk handlers ----
   const beginTalk = async () => {
@@ -184,6 +222,9 @@ export default function App() {
         case "r": // repeat current riddle
           repeat();
           break;
+        case "g": // generate a new riddle with AI
+          conjureRiddle();
+          break;
         case "t": // toggle choices (voice mode only)
           if (canRecord) setShowChoices((s) => !s);
           break;
@@ -196,7 +237,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, riddle, canRecord, showResult, nextRiddle, repeat]);
+  }, [phase, riddle, canRecord, showResult, nextRiddle, repeat, conjureRiddle]);
 
   // ---- Render ----
   if (phase === PHASE.ATTRACT) {
@@ -226,7 +267,10 @@ export default function App() {
         ) : phase === PHASE.WRONG ? (
           <h2 className="verdict lose">👻 Oooh… try again! 👻</h2>
         ) : (
-          <p className="question">{riddle?.question}</p>
+          <>
+            {riddle?.ai && <p className="ai-badge">✨ Brand-new riddle, written by AI just now! ✨</p>}
+            <p className="question">{riddle?.question}</p>
+          </>
         )}
       </div>
 
@@ -275,7 +319,7 @@ export default function App() {
         </div>
       )}
 
-      {phase === PHASE.THINKING && <p className="thinking">👻 The ghost is thinking…</p>}
+      {phase === PHASE.THINKING && <p className="thinking">👻 {thinkingMsg}</p>}
 
       {phase === PHASE.CORRECT && (
         <button className="big-btn next" onClick={nextRiddle}>
@@ -293,6 +337,7 @@ export default function App() {
         onWrong={() => showResult(false)}
         onNext={nextRiddle}
         onRepeat={repeat}
+        onConjure={conjureRiddle}
         onHint={() => riddle?.hint && speak(riddle.hint)}
         riddleNumber={index + 1}
         total={riddles.length}

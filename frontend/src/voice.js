@@ -31,13 +31,25 @@ export function speak(text, { onEnd } = {}) {
     return;
   }
   synth.cancel();
+
+  // Some browsers/voices never fire "end". A watchdog guarantees the game can't
+  // stall waiting on the speaker.
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    clearTimeout(watchdog);
+    onEnd?.();
+  };
+  const watchdog = setTimeout(finish, 2000 + text.length * 110);
   const u = new SpeechSynthesisUtterance(text);
   const v = pickVoice();
   if (v) u.voice = v;
   u.rate = 0.9; // slower = clearer for kids
   u.pitch = 0.8; // lower = ghostly
   u.volume = 1;
-  if (onEnd) u.onend = onEnd;
+  u.onend = finish;
+  u.onerror = finish;
   synth.speak(u);
 }
 

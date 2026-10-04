@@ -13,12 +13,15 @@ from __future__ import annotations
 import json
 import logging
 import random
+import threading
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+import ai
 from judge import grade, grade_tap
 from stt import transcriber
 
@@ -29,7 +32,35 @@ RIDDLES_PATH = Path(__file__).with_name("riddles.json")
 _RIDDLES: list[dict] = json.loads(RIDDLES_PATH.read_text())["riddles"]
 _BY_ID: dict[str, dict] = {r["id"]: r for r in _RIDDLES}
 
-app = FastAPI(title="Spooky AI Ghost Riddle Booth")
+# ---- AI extras (all optional; the booth works fine with Ollama off) ----
+_REACTIONS: dict[str, list[str]] = {"win": [], "lose": []}
+_REACTIONS_MAX = 24
+_refresh_lock = threading.Lock()
+_ai_counter = 0
+_recent_ai_answers: list[str] = []
+
+
+def _refresh_reactions() -> None:
+    """Top up the cached Ollama-written ghost lines (runs in a thread)."""
+    if not _refresh_lock.acquire(blocking=False):
+        return
+    try:
+        for kind in ("win", "lose"):
+            fresh = ai.make_reactions(kind)
+            merged = list(dict.fromkeys(fresh + _REACTIONS[kind]))
+            _REACTIONS[kind] = merged[:_REACTIONS_MAX]
+    finally:
+        _refresh_lock.release()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Warm the model and pre-write some reactions so the first cheer is instant.
+    threading.Thread(target=_refresh_reactions, daemon=True).start()
+    yield
+
+
+app = FastAPI(title="Spooky AI Ghost Riddle Booth", lifespan=lifespan)
 
 # The kiosk frontend is same-machine; keep CORS open for easy LAN testing too.
 app.add_middleware(
@@ -64,6 +95,37 @@ def health() -> dict:
 @app.get("/api/riddles")
 def riddles() -> dict:
     return {"riddles": [_public_riddle(r) for r in _RIDDLES]}
+
+
+@app.post("/api/riddles/generate")
+def generate_riddle() -> dict:
+    """Have Ollama write a brand-new riddle. 503 if it can't (UI keeps going)."""
+    global _ai_counter
+    # Don't repeat answers already in the bank or recently generated.
+    avoid = [a for r in _RIDDLES for a in r["answers"]] + _recent_ai_answers
+    made = ai.make_riddle(avoid)
+    if made is None:
+        raise HTTPException(status_code=503, detail="Could not conjure a riddle")
+    _ai_counter += 1
+    rid = f"ai{_ai_counter}"
+    record = {
+        "id": rid,
+        "question": made["question"],
+        "answers": [made["answer"].lower()],
+        "choices": made["choices"],
+        "hint": made["hint"],
+    }
+    _BY_ID[rid] = record
+    _recent_ai_answers.append(made["answer"].lower())
+    del _recent_ai_answers[:-10]
+    return {"riddle": {**_public_riddle(record), "ai": True}}
+
+
+@app.get("/api/reactions")
+def reactions() -> dict:
+    """Cached Ollama-written ghost lines; also kicks off a background top-up."""
+    threading.Thread(target=_refresh_reactions, daemon=True).start()
+    return _REACTIONS
 
 
 class TapAnswer(BaseModel):

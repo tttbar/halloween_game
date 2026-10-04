@@ -10,6 +10,29 @@ Because carnivals are loud, **tap-only is the default**. Voice answers
 (microphone → Whisper → Ollama) are still built in as an opt-in extra: open the
 page with `?voice=1` (e.g. `http://localhost:5173/?voice=1`).
 
+## ✨ The AI part (Ollama)
+
+Two optional features use your local Ollama. If Ollama is off, the game quietly
+falls back to the built-in riddles and lines — nothing breaks.
+
+1. **AI-written riddles** — press **`G`** (or ✨ in the operator bar) and Gus
+   conjures a brand-new riddle in 1–5 seconds, marked *"Brand-new riddle,
+   written by AI just now!"*. The code picks the answer and the two wrong
+   choices from a curated word list (so choices are never confusing or unsafe);
+   the model only writes the riddle, and bad/unsafe/answer-revealing riddles
+   are rejected automatically. If a riddle is odd, press `N` to skip it.
+2. **Varied ghost reactions** — Gus's cheers and "try again" lines are
+   written by the model ahead of time (so there's no delay) and mixed in with
+   the built-in lines. Cheers always say "treat" so kids know to grab candy.
+
+One-time setup (while you have internet):
+```bash
+ollama pull llama3.1:8b
+```
+Tip: run `ollama serve` before the carnival; the model stays loaded for 30 minutes.
+
+---
+
 Everything runs **locally on your computer** — no cloud, no internet required at
 the booth.
 
@@ -42,7 +65,7 @@ guesswork) and you have hidden operator keys as a backup.
 ### 0. One-time prerequisites
 
 - **Python 3.10+** and **Node 18+**.
-- Nothing else! Tap-only mode needs neither Ollama nor Whisper.
+- Nothing else is *required*. Ollama (`ollama pull llama3.1:8b`) is only needed for the AI riddle / reaction features above; Whisper is only for voice mode.
 - *Only if you want voice mode (`?voice=1`):*
   ```bash
   backend/.venv/bin/pip install -r backend/requirements-voice.txt
@@ -85,6 +108,7 @@ anytime:
 | `N` | **Next** riddle |
 | `R` | **Repeat** / re-ask the current riddle |
 | `H` | Speak the **hint** |
+| `G` | Have **AI write a brand-new riddle** and jump to it |
 | `T` | Toggle the choices (voice mode only) |
 | `` ` `` | Show/hide the operator bar |
 
@@ -93,12 +117,13 @@ anytime:
 
 ---
 
-## 🛠️ Voice-mode tuning (optional)
+## 🛠️ Tuning (optional)
 
-Only relevant with `?voice=1`. Set environment variables before `./run.sh`:
+Set environment variables before `./run.sh`. All but the first row only matter in voice mode (`?voice=1`):
 
 | Variable | Default | What it does |
 |----------|---------|--------------|
+| `OLLAMA_WRITER_MODEL` | `llama3.1:8b` | Model that writes riddles + reactions (not voice-only) |
 | `WHISPER_MODEL` | `base.en` | `small.en` = more accurate but slower; `tiny.en` = fastest |
 | `OLLAMA_MODEL` | `llama3.2:3b` | Any pulled Ollama model |
 | `FUZZY_THRESHOLD` | `82` | Lower = more forgiving answer matching (0–100) |
@@ -127,6 +152,7 @@ Run through this the morning of:
 | Problem | Fix |
 |---------|-----|
 | Ghost won't talk | Click anywhere / re-click **Start** — browsers block audio until a click. |
+| `G` says "couldn't think of a new riddle" | Ollama not running or model not pulled (`ollama list`). The game carries on with built-in riddles. |
 | Mic not working (voice mode) | Grant Chrome mic permission, or use the default tap mode. |
 | Answers misjudged | Press **C**/**X** to override; lower `FUZZY_THRESHOLD`. |
 | "Couldn't reach the ghost's brain" | Backend not running — check the `run.sh` terminal. |
@@ -151,6 +177,7 @@ halloween_game/
 ├── backend/
 │   ├── main.py            # FastAPI app: /api/riddles, /api/answer/tap, /ws/answer
 │   ├── stt.py             # voice mode: faster-whisper speech-to-text
+│   ├── ai.py              # Ollama: AI-written riddles + ghost reactions
 │   ├── judge.py           # tap grading (exact) + voice grading (RapidFuzz/Ollama)
 │   ├── riddles.json       # the riddle bank (edit me!)
 │   └── requirements.txt

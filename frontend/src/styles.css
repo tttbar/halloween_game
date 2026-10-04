@@ -344,3 +344,10 @@ h1 {
 .op-bar button:hover {
   background: #3d1d72;
 }
+
+.ai-badge {
+  margin: 0 0 1.2vh;
+  font-size: clamp(0.9rem, 2.2vw, 1.4rem);
+  color: #8dffb5;
+  text-shadow: 0 0 12px rgba(80, 255, 150, 0.6);
+}
