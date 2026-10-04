@@ -352,12 +352,6 @@ h1 {
   text-shadow: 0 0 12px rgba(80, 255, 150, 0.6);
 }
 
-/* ---------- Eyes follow the person (CSS vars set by usePresence) ---------- */
-.ghost__eyes {
-  transform: translate(calc(var(--gaze-x, 0) * 8px), calc(var(--gaze-y, 0) * 5px));
-  transition: transform 0.15s linear;
-}
-
 /* ---------- Attract extras ---------- */
 .how-it-works {
   position: absolute;
@@ -380,13 +374,6 @@ h1 {
   color: var(--orange-bright);
   text-shadow: 0 0 16px rgba(255, 122, 26, 0.6);
   animation: pop 0.4s ease;
-}
-.cam-dot {
-  position: fixed;
-  bottom: 8px;
-  left: 12px;
-  font-size: 0.8rem;
-  opacity: 0.35;
 }
 .voice-hint {
   position: fixed;

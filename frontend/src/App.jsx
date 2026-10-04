@@ -4,7 +4,6 @@ import HowItWorks from "./HowItWorks.jsx";
 import OperatorBar from "./OperatorBar.jsx";
 import { speak, stopSpeaking } from "./voice.js";
 import { PushToTalk, gradeSpokenAnswer, supportsRecording } from "./recorder.js";
-import { usePresence } from "./usePresence.js";
 
 // Game phases
 const PHASE = {
@@ -37,18 +36,11 @@ const GREET_LINES = [
 const params = new URLSearchParams(window.location.search);
 // Tap-only by default (reliable in a noisy room). ?voice=1 adds hold-to-talk.
 const VOICE_ENABLED = params.get("voice") === "1";
-// Camera greeting is on by default; ?camera=0 turns it off. ?near=0.15 changes
-// how close someone must stand (bigger = closer).
-const CAMERA_DEFAULT = params.get("camera") !== "0";
-const NEAR_SIZE = Number(params.get("near")) || 0.12;
-
 // The "barker": in attract mode Gus calls out an invitation every so often.
 // ?bark=0 turns it off; the operator can also toggle it with M.
 const BARK_DEFAULT = params.get("bark") !== "0";
 const BARK_EVERY_MS = 45000;
 
-const GREET_COOLDOWN_MS = 30000;
-const WALK_AWAY_MS = 60000;
 
 // Ollama-written lines (fetched from the backend) are mixed in with the
 // built-in ones above, which are the fallback when Ollama is off.
@@ -92,15 +84,12 @@ export default function App() {
   const [thinkingMsg, setThinkingMsg] = useState("The ghost is thinking…");
   const [greeting, setGreeting] = useState("");
   const [unlocked, setUnlocked] = useState(false);
-  const [cameraOn, setCameraOn] = useState(CAMERA_DEFAULT);
   const [barkOn, setBarkOn] = useState(BARK_DEFAULT);
   const pttRef = useRef(null);
   const unlockedRef = useRef(false);
   const lastGreetRef = useRef(-Infinity);
   const lastActivityRef = useRef(Date.now());
-  const sawFaceRef = useRef(false);
 
-  const presence = usePresence(cameraOn, NEAR_SIZE);
   const riddle = riddles[index];
 
   // Backend reachability + first batch of AI lines.
@@ -126,7 +115,6 @@ export default function App() {
     setIndex(0);
     setStatus("");
     setGreeting("");
-    sawFaceRef.current = false;
   }, []);
 
   const ghostMood =
@@ -294,7 +282,7 @@ export default function App() {
 
   const repeat = useCallback(() => riddle && askRiddle(riddle), [riddle, askRiddle]);
 
-  // ---- Greetings: camera, operator wave (W), and the timed barker ----
+  // ---- Greetings: operator wave (W) and the timed barker ----
   const greet = useCallback(() => {
     lastGreetRef.current = Date.now();
     const line = pick([...aiLines.greet, ...GREET_LINES]);
@@ -302,13 +290,6 @@ export default function App() {
     const clear = () => setGreeting((g) => (g === line ? "" : g));
     say(line, { onEnd: () => setTimeout(clear, 5000) });
   }, [say]);
-
-  // Someone walked up (camera).
-  useEffect(() => {
-    if (!presence.near || phase !== PHASE.ATTRACT) return;
-    if (Date.now() - lastGreetRef.current < GREET_COOLDOWN_MS) return;
-    greet();
-  }, [presence.near, phase, greet]);
 
   // Timed barker: only when nobody is interacting and Gus hasn't just spoken.
   useEffect(() => {
@@ -321,21 +302,6 @@ export default function App() {
     }, 5000);
     return () => clearInterval(t);
   }, [barkOn, phase, greet]);
-
-  // Eyes/greeting only make sense while someone is in view.
-  useEffect(() => {
-    if (presence.seen) sawFaceRef.current = true;
-  }, [presence.seen]);
-
-  // Everyone walked away mid-game -> back to the attract screen.
-  useEffect(() => {
-    if (phase === PHASE.ATTRACT || presence.status !== "ready") return undefined;
-    const t = setInterval(() => {
-      const idle = Date.now() - lastActivityRef.current > WALK_AWAY_MS;
-      if (sawFaceRef.current && !presence.seen && idle) resetToAttract();
-    }, 5000);
-    return () => clearInterval(t);
-  }, [phase, presence.status, presence.seen, resetToAttract]);
 
   // ---- Keyboard: operator hotkeys + number keys for physical buttons ----
   const onKeyRef = useRef(null);
@@ -350,8 +316,6 @@ export default function App() {
         handleStart();
       } else if (key === "w") {
         greet(); // operator waves Gus at someone approaching
-      } else if (key === "v") {
-        setCameraOn((c) => !c);
       } else if (key === "m") {
         setBarkOn((b) => !b);
       }
@@ -400,9 +364,6 @@ export default function App() {
       case "l": // switch little/big
         toggleLevel();
         break;
-      case "v": // camera on/off
-        setCameraOn((c) => !c);
-        break;
       case "m": // timed barker on/off
         setBarkOn((b) => !b);
         break;
@@ -443,7 +404,6 @@ export default function App() {
       onNext: nextRiddle,
       onRepeat: repeat,
       onConjure: conjureRiddle,
-      onToggleCamera: () => setCameraOn((c) => !c),
       onToggleBark: () => setBarkOn((b) => !b),
       onWave: greet,
       onHome: resetToAttract,
@@ -454,18 +414,10 @@ export default function App() {
       riddleNumber: index + 1,
       total: riddles.length,
       level,
-      camera: {
-        on: cameraOn,
-        status: presence.status,
-        near: presence.near,
-        seen: presence.seen,
-        faceSize: presence.faceSize,
-      },
     };
 
   const corner = (
     <>
-      {presence.status === "ready" && <div className="cam-dot">📷</div>}
       {!unlocked && phase === PHASE.ATTRACT && (
         <div className="voice-hint">🔇 click once (or press any key) to turn on Gus's voice</div>
       )}
@@ -487,7 +439,7 @@ export default function App() {
           {ready ? "Start the Game!" : "Summoning the ghost..."}
         </button>
         {status && <p className="status">{status}</p>}
-        <HowItWorks cameraOn={presence.status === "ready"} />
+        <HowItWorks />
         {corner}
         <OperatorBar {...operatorProps} />
       </div>

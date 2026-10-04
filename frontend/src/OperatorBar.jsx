@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
  * Hidden by default; press the backtick (`) key or tap the tiny corner dot to
  * reveal. Buttons mirror the keyboard shortcuts so either works.
  *
- * Shortcuts:  C=correct  X=wrong  N=next  R=repeat  H=hint  G=AI riddle  L=level  V=camera  W=wave  M=barker  T=toggle choices
+ * Shortcuts:  C=correct  X=wrong  N=next  R=repeat  H=hint  G=AI riddle  L=level  W=wave  M=barker  T=toggle choices
  */
 export default function OperatorBar({
   onCorrect,
@@ -13,14 +13,12 @@ export default function OperatorBar({
   onNext,
   onRepeat,
   onConjure,
-  onToggleCamera,
   onToggleLevel,
   onToggleBark,
   onWave,
   onHome,
   bark,
   attract,
-  camera,
   level,
   onHint,
   riddleNumber,
@@ -50,11 +48,6 @@ export default function OperatorBar({
           <span className="op-count">
             Riddle {riddleNumber}/{total} · level: {level || "—"}
           </span>
-          <span className="op-count">
-            📷 {camera.on ? camera.status : "off"}
-            {camera.status === "ready" &&
-              ` · face ${camera.faceSize.toFixed(2)} · ${camera.near ? "NEAR" : camera.seen ? "seen" : "nobody"}`}
-          </span>
           <button onClick={onCorrect}>✓ Correct (C)</button>
           <button onClick={onWrong}>✗ Wrong (X)</button>
           <button onClick={onRepeat}>↻ Repeat (R)</button>
@@ -64,9 +57,6 @@ export default function OperatorBar({
           <button onClick={onToggleBark}>{bark ? "📣 Barker off (M)" : "📣 Barker on (M)"}</button>
           <button onClick={onToggleLevel}>
             {level === "little" ? "🧒 Switch to Big (L)" : "🐣 Switch to Little (L)"}
-          </button>
-          <button onClick={onToggleCamera}>
-            {camera.on ? "📷 Camera off (V)" : "📷 Camera on (V)"}
           </button>
           <button onClick={onHint}>💡 Hint (H)</button>
           <button onClick={onNext}>→ Next (N)</button>

@@ -49,30 +49,20 @@ your screen isn't touch. Answer choices show numbered, color-coded badges
 `1` (or Enter) also presses **Start** and **Next Riddle**; on the level screen
 `1` = Little, `2` = Big. `Esc` returns to the attract screen.
 
-## 📣 Greeting without a camera
+## 🔒 Privacy
+
+There is **no camera or microphone use by default**. Gus never records or sends
+anything anywhere; riddles are graded on your own computer. (Voice answers are
+an opt-in extra with `?voice=1`; it records only while the button is held.) An earlier version had an optional webcam greeting; it was removed
+to keep the project simple and is available at the git tag `camera-greeting`.
+
+## 📣 Greeting visitors
 
 On the welcome screen Gus also **calls out an invitation by himself** about
 every 45 seconds ("Psst! Want to play a riddle?"), using the AI-written
 greeting lines. He stays quiet while someone is touching the controls. Press
 **`M`** to mute/unmute him (or start with `?bark=0`). When a visitor wanders up,
 press **`W`** and Gus greets them right away.
-
-## 👀 Optional: camera greeting
-
-If a **webcam** is attached, Gus notices when someone walks up, says hello (an
-AI-written line), invites them to play, and his **eyes follow them**. If
-everyone walks away mid-game for a minute, he returns to the attract screen.
-No webcam? Nothing breaks — the feature just stays off.
-
-- Face detection runs **inside the browser**; images are never saved or sent
-  anywhere. The model and runtime are bundled, so it works offline.
-- Stand-near distance: add `?near=0.15` to the URL for "must be closer"
-  (default `0.12`; the operator bar shows the live face size). `?camera=0`
-  disables it; `V` toggles it live.
-- Chrome only allows speech after one click/keypress; until then Gus greets
-  with text only (a small 🔇 hint appears in the corner).
-- Suggested table sign: *"Gus's camera only notices that someone is nearby.
-  Nothing is recorded or saved."*
 
 ---
 
@@ -153,7 +143,6 @@ anytime:
 | `H` | Speak the **hint** |
 | `G` | Have **AI write a brand-new riddle** and jump to it |
 | `L` | Switch **little/big** level |
-| `V` | Camera greeting on/off |
 | `Esc` | **Back to the welcome screen** (or use 🏠 in the operator bar) — do this after each kid |
 | `W` | **Wave**: Gus greets whoever is walking up (welcome screen) |
 | `M` | Timed "barker" on/off |
@@ -236,9 +225,6 @@ halloween_game/
         ├── Ghost.jsx      # animated SVG ghost (idle/talking/happy/sad)
         ├── OperatorBar.jsx# hidden operator controls
         ├── HowItWorks.jsx # rotating Innovation Lab messages on the attract screen
-        ├── usePresence.js # webcam presence + eye tracking (optional)
-        ├── presenceTracker.js # near/seen logic (npm test)
-        ├── faceDetector.js# MediaPipe face detector wrapper
         ├── voice.js       # ghost text-to-speech
         ├── recorder.js    # push-to-talk mic capture
         └── styles.css
