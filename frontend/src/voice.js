@@ -24,6 +24,26 @@ if (typeof window !== "undefined" && window.speechSynthesis) {
   };
 }
 
+// ---- "Is Gus speaking right now?" store (drives the mouth animation) ----
+let speaking = false;
+let currentId = 0; // lets a stale utterance's events be ignored
+const listeners = new Set();
+
+function setSpeaking(value) {
+  if (speaking === value) return;
+  speaking = value;
+  listeners.forEach((fn) => fn());
+}
+
+export function subscribeSpeaking(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+export function isSpeaking() {
+  return speaking;
+}
+
 export function speak(text, { onEnd } = {}) {
   const synth = window.speechSynthesis;
   if (!synth) {
@@ -31,28 +51,44 @@ export function speak(text, { onEnd } = {}) {
     return;
   }
   synth.cancel();
+  const id = ++currentId;
 
-  // Some browsers/voices never fire "end". A watchdog guarantees the game can't
-  // stall waiting on the speaker.
+  let started = false;
   let finished = false;
   const finish = () => {
     if (finished) return;
     finished = true;
     clearTimeout(watchdog);
+    clearTimeout(startFallback);
+    if (id === currentId) setSpeaking(false);
     onEnd?.();
   };
-  const watchdog = setTimeout(finish, 2000 + text.length * 110);
+  const begin = () => {
+    if (started || finished || id !== currentId) return;
+    started = true;
+    setSpeaking(true);
+  };
+
+  // Some engines never fire "end"; this guarantees the mouth stops and the game
+  // can't stall. It's an upper bound only (~85ms per character at our rate).
+  const watchdog = setTimeout(finish, 1500 + text.length * 85);
+  // Some engines never fire "start"; move the mouth anyway if audio is late.
+  const startFallback = setTimeout(begin, 700);
+
   const u = new SpeechSynthesisUtterance(text);
   const v = pickVoice();
   if (v) u.voice = v;
   u.rate = 0.9; // slower = clearer for kids
   u.pitch = 0.8; // lower = ghostly
   u.volume = 1;
+  u.onstart = begin;
   u.onend = finish;
   u.onerror = finish;
   synth.speak(u);
 }
 
 export function stopSpeaking() {
+  currentId += 1; // ignore late events from the utterance being cancelled
+  setSpeaking(false);
   window.speechSynthesis?.cancel();
 }

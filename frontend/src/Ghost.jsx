@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useSyncExternalStore } from "react";
+import { isSpeaking, subscribeSpeaking } from "./voice.js";
 
 /**
  * Friendly cartoon ghost rendered as inline SVG so it needs no art assets.
@@ -6,8 +7,10 @@ import React from "react";
  *   idle | talking | happy | sad
  */
 export default function Ghost({ mood = "idle" }) {
+  // The mouth follows the actual speech audio, not the game state.
+  const speaking = useSyncExternalStore(subscribeSpeaking, isSpeaking);
   return (
-    <div className={`ghost ghost--${mood}`} aria-hidden="true">
+    <div className={`ghost ghost--${mood}${speaking ? " ghost--speaking" : ""}`} aria-hidden="true">
       <svg viewBox="0 0 220 260" width="100%" height="100%">
         <defs>
           <radialGradient id="glow" cx="50%" cy="40%" r="60%">

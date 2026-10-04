@@ -123,7 +123,7 @@ h1 {
 }
 
 /* Talking: animate the mouth open/close */
-.ghost--talking .ghost__mouth {
+.ghost--speaking .ghost__mouth {
   animation: talk 0.28s steps(2) infinite;
 }
 @keyframes talk {

@@ -134,7 +134,7 @@ export default function App() {
       ? "happy"
       : phase === PHASE.WRONG
       ? "sad"
-      : phase === PHASE.ASKING || (phase === PHASE.ATTRACT && greeting)
+      : phase === PHASE.ASKING
       ? "talking"
       : "idle";
 

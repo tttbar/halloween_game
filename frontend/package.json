@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --host --port 4173",
     "postinstall": "node scripts/copy-mediapipe.mjs",
-    "test": "node scripts/test-tracker.mjs"
+    "test": "node scripts/test-tracker.mjs && node scripts/test-voice.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
