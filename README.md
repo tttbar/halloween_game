@@ -199,6 +199,7 @@ Run through this the morning of:
 
 | Problem | Fix |
 |---------|-----|
+| First word of Gus's lines cut off | The speakers/monitor audio fall asleep when idle. A soft chime now plays before a line after a quiet spell to wake them (add `?chime=0` to the URL to turn it off). Also try disabling power-saving/auto-standby on the monitor's audio. |
 | Ghost won't talk | Click anywhere / re-click **Start** — browsers block audio until a click. |
 | `G` says "couldn't think of a new riddle" | Ollama not running or model not pulled (`ollama list`). The game carries on with built-in riddles. |
 | Mic not working (voice mode) | Grant Chrome mic permission, or use the default tap mode. |
