@@ -11,3 +11,6 @@ frontend/dist/
 # OS / editor
 .DS_Store
 *.log
+
+# MediaPipe WASM runtime is copied here by `npm install`
+frontend/public/mediapipe/

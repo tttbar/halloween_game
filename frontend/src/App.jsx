@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Ghost from "./Ghost.jsx";
+import HowItWorks from "./HowItWorks.jsx";
 import OperatorBar from "./OperatorBar.jsx";
 import { speak, stopSpeaking } from "./voice.js";
 import { PushToTalk, gradeSpokenAnswer, supportsRecording } from "./recorder.js";
+import { usePresence } from "./usePresence.js";
 
 // Game phases
 const PHASE = {
   ATTRACT: "attract",
+  LEVEL: "level",
   ASKING: "asking",
   AWAITING: "awaiting",
   LISTENING: "listening",
@@ -25,14 +28,26 @@ const TRY_AGAIN_LINES = [
   "Hmmm, that's not it. Try again, brave one!",
   "So close! Have another guess!",
 ];
+const GREET_LINES = [
+  "Boo! Hello there! Want to play a spooky riddle game?",
+  "Oooooh, a visitor! Come play riddles with me!",
+  "Hi, friend! Press Start and let's play!",
+];
 
-// Tap-only by default (reliable in a noisy room). Add ?voice=1 to the URL to
-// also enable the hold-to-talk microphone button.
-const VOICE_ENABLED = new URLSearchParams(window.location.search).get("voice") === "1";
+const params = new URLSearchParams(window.location.search);
+// Tap-only by default (reliable in a noisy room). ?voice=1 adds hold-to-talk.
+const VOICE_ENABLED = params.get("voice") === "1";
+// Camera greeting is on by default; ?camera=0 turns it off. ?near=0.15 changes
+// how close someone must stand (bigger = closer).
+const CAMERA_DEFAULT = params.get("camera") !== "0";
+const NEAR_SIZE = Number(params.get("near")) || 0.12;
 
-// Ollama-written lines (fetched from the backend) are mixed in with these
-// built-in ones, which are the fallback when Ollama is off.
-const aiLines = { win: [], lose: [] };
+const GREET_COOLDOWN_MS = 30000;
+const WALK_AWAY_MS = 60000;
+
+// Ollama-written lines (fetched from the backend) are mixed in with the
+// built-in ones above, which are the fallback when Ollama is off.
+const aiLines = { win: [], lose: [], greet: [] };
 
 function refreshAiLines() {
   fetch("/api/reactions")
@@ -40,6 +55,7 @@ function refreshAiLines() {
     .then((d) => {
       aiLines.win = d.win || [];
       aiLines.lose = d.lose || [];
+      aiLines.greet = d.greet || [];
     })
     .catch(() => {});
 }
@@ -48,7 +64,18 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function shuffled(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function App() {
+  const [ready, setReady] = useState(false);
+  const [level, setLevel] = useState(null); // "little" | "big"
   const [riddles, setRiddles] = useState([]);
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState(PHASE.ATTRACT);
@@ -58,17 +85,42 @@ export default function App() {
   const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState("");
   const [thinkingMsg, setThinkingMsg] = useState("The ghost is thinking…");
+  const [greeting, setGreeting] = useState("");
+  const [unlocked, setUnlocked] = useState(false);
+  const [cameraOn, setCameraOn] = useState(CAMERA_DEFAULT);
   const pttRef = useRef(null);
+  const unlockedRef = useRef(false);
+  const lastGreetRef = useRef(-Infinity);
+  const lastActivityRef = useRef(Date.now());
+  const sawFaceRef = useRef(false);
 
+  const presence = usePresence(cameraOn, NEAR_SIZE);
   const riddle = riddles[index];
 
-  // Load the riddle bank once.
+  // Backend reachability + first batch of AI lines.
   useEffect(() => {
-    fetch("/api/riddles")
+    fetch("/api/health")
       .then((r) => r.json())
-      .then((d) => setRiddles(d.riddles || []))
+      .then(() => setReady(true))
       .catch(() => setStatus("Could not reach the ghost's brain (backend)."));
     refreshAiLines();
+  }, []);
+
+  const say = useCallback((text, opts) => {
+    // Browsers only allow speech after the page has had one click/keypress.
+    if (unlockedRef.current) speak(text, opts);
+    else opts?.onEnd?.();
+  }, []);
+
+  const resetToAttract = useCallback(() => {
+    stopSpeaking();
+    setPhase(PHASE.ATTRACT);
+    setLevel(null);
+    setRiddles([]);
+    setIndex(0);
+    setStatus("");
+    setGreeting("");
+    sawFaceRef.current = false;
   }, []);
 
   const ghostMood =
@@ -76,7 +128,7 @@ export default function App() {
       ? "happy"
       : phase === PHASE.WRONG
       ? "sad"
-      : phase === PHASE.ASKING
+      : phase === PHASE.ASKING || (phase === PHASE.ATTRACT && greeting)
       ? "talking"
       : "idle";
 
@@ -94,8 +146,10 @@ export default function App() {
     [canRecord]
   );
 
-  // Start button: unlock audio + mic, then ask the first riddle.
-  const handleStart = async () => {
+  // Start: unlock mic (voice mode), then ask which level to play.
+  const handleStart = useCallback(async () => {
+    setGreeting("");
+    stopSpeaking();
     try {
       if (canRecord) {
         pttRef.current = new PushToTalk();
@@ -104,8 +158,29 @@ export default function App() {
     } catch {
       setStatus("Microphone blocked — tap-to-answer still works!");
     }
-    askRiddle(riddles[index]);
-  };
+    setPhase(PHASE.LEVEL);
+    speak("Are you a little ghost, or a big ghost?");
+  }, [canRecord]);
+
+  const chooseLevel = useCallback(
+    async (lv) => {
+      stopSpeaking();
+      setStatus("");
+      try {
+        const res = await fetch(`/api/riddles?level=${lv}`);
+        const { riddles: list } = await res.json();
+        if (!list?.length) throw new Error("empty");
+        const playlist = shuffled(list);
+        setLevel(lv);
+        setRiddles(playlist);
+        setIndex(0);
+        askRiddle(playlist[0]);
+      } catch {
+        setStatus("Could not reach the ghost's brain (backend).");
+      }
+    },
+    [askRiddle]
+  );
 
   const nextRiddle = useCallback(() => {
     stopSpeaking();
@@ -133,13 +208,15 @@ export default function App() {
 
   // Operator: have Ollama write a brand-new riddle and jump straight to it.
   const conjureRiddle = useCallback(async () => {
+    if (!level) return;
     stopSpeaking();
     setStatus("");
     setThinkingMsg("✨ Gus is conjuring a brand-new riddle…");
     setPhase(PHASE.THINKING);
+    const url = `/api/riddles/generate?level=${level}`;
     try {
-      let res = await fetch("/api/riddles/generate", { method: "POST" });
-      if (!res.ok) res = await fetch("/api/riddles/generate", { method: "POST" });
+      let res = await fetch(url, { method: "POST" });
+      if (!res.ok) res = await fetch(url, { method: "POST" });
       if (!res.ok) throw new Error("no riddle");
       const { riddle: made } = await res.json();
       setRiddles((rs) => [...rs.slice(0, index + 1), made, ...rs.slice(index + 1)]);
@@ -151,9 +228,9 @@ export default function App() {
     } finally {
       setThinkingMsg("The ghost is thinking…");
     }
-  }, [index, askRiddle]);
+  }, [index, level, askRiddle]);
 
-  // ---- Push-to-talk handlers ----
+  // ---- Push-to-talk handlers (voice mode) ----
   const beginTalk = async () => {
     if (phase !== PHASE.AWAITING || !canRecord || !pttRef.current) return;
     stopSpeaking();
@@ -184,9 +261,10 @@ export default function App() {
     }
   };
 
-  // ---- Tap-to-answer ----
+  // ---- Tap / button answer ----
   const tapAnswer = async (choice) => {
     if (phase !== PHASE.AWAITING && phase !== PHASE.ASKING) return;
+    if (wrongChoices.includes(choice)) return;
     stopSpeaking();
     setPhase(PHASE.THINKING);
     try {
@@ -204,54 +282,204 @@ export default function App() {
     }
   };
 
-  // ---- Operator controls (hidden hotkeys) ----
+  const toggleLevel = useCallback(() => {
+    if (level) chooseLevel(level === "little" ? "big" : "little");
+  }, [level, chooseLevel]);
+
   const repeat = useCallback(() => riddle && askRiddle(riddle), [riddle, askRiddle]);
 
+  // ---- Camera: greet someone who walks up ----
   useEffect(() => {
-    const onKey = (e) => {
-      if (phase === PHASE.ATTRACT) return;
-      switch (e.key.toLowerCase()) {
-        case "c": // operator: mark correct
-          showResult(true);
-          break;
-        case "x": // operator: mark wrong
-          showResult(false);
-          break;
-        case "n": // next riddle
-          nextRiddle();
-          break;
-        case "r": // repeat current riddle
-          repeat();
-          break;
-        case "g": // generate a new riddle with AI
-          conjureRiddle();
-          break;
-        case "t": // toggle choices (voice mode only)
-          if (canRecord) setShowChoices((s) => !s);
-          break;
-        case "h": // speak hint
-          if (riddle?.hint) speak(riddle.hint);
-          break;
-        default:
-          break;
+    if (!presence.near || phase !== PHASE.ATTRACT) return;
+    const now = Date.now();
+    if (now - lastGreetRef.current < GREET_COOLDOWN_MS) return;
+    lastGreetRef.current = now;
+    const line = pick([...aiLines.greet, ...GREET_LINES]);
+    setGreeting(line);
+    const clear = () => setGreeting((g) => (g === line ? "" : g));
+    say(line, { onEnd: () => setTimeout(clear, 5000) });
+  }, [presence.near, phase, say]);
+
+  // Eyes/greeting only make sense while someone is in view.
+  useEffect(() => {
+    if (presence.seen) sawFaceRef.current = true;
+  }, [presence.seen]);
+
+  // Everyone walked away mid-game -> back to the attract screen.
+  useEffect(() => {
+    if (phase === PHASE.ATTRACT || presence.status !== "ready") return undefined;
+    const t = setInterval(() => {
+      const idle = Date.now() - lastActivityRef.current > WALK_AWAY_MS;
+      if (sawFaceRef.current && !presence.seen && idle) resetToAttract();
+    }, 5000);
+    return () => clearInterval(t);
+  }, [phase, presence.status, presence.seen, resetToAttract]);
+
+  // ---- Keyboard: operator hotkeys + number keys for physical buttons ----
+  const onKeyRef = useRef(null);
+  onKeyRef.current = (e) => {
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const key = e.key.toLowerCase();
+    const digit = /^[1-9]$/.test(key) ? Number(key) : 0;
+
+    if (phase === PHASE.ATTRACT) {
+      if ((digit === 1 || key === "enter") && ready) {
+        e.preventDefault();
+        handleStart();
+      } else if (key === "v") {
+        setCameraOn((c) => !c);
+      }
+      return;
+    }
+
+    if (key === "escape") {
+      resetToAttract();
+      return;
+    }
+    if (phase === PHASE.LEVEL) {
+      if (digit === 1) chooseLevel("little");
+      else if (digit === 2) chooseLevel("big");
+      return;
+    }
+    if (digit && (phase === PHASE.AWAITING || phase === PHASE.ASKING) && showChoices) {
+      const choice = riddle?.choices?.[digit - 1];
+      if (choice) {
+        e.preventDefault();
+        tapAnswer(choice);
+      }
+      return;
+    }
+    if ((digit === 1 || key === "enter") && phase === PHASE.CORRECT) {
+      e.preventDefault();
+      nextRiddle();
+      return;
+    }
+
+    switch (key) {
+      case "c": // operator: mark correct
+        showResult(true);
+        break;
+      case "x": // operator: mark wrong
+        showResult(false);
+        break;
+      case "n": // next riddle
+        nextRiddle();
+        break;
+      case "r": // repeat current riddle
+        repeat();
+        break;
+      case "g": // generate a new riddle with AI
+        conjureRiddle();
+        break;
+      case "l": // switch little/big
+        toggleLevel();
+        break;
+      case "v": // camera on/off
+        setCameraOn((c) => !c);
+        break;
+      case "t": // toggle choices (voice mode only)
+        if (canRecord) setShowChoices((s) => !s);
+        break;
+      case "h": // speak hint
+        if (riddle?.hint) speak(riddle.hint);
+        break;
+      default:
+        break;
+    }
+  };
+  useEffect(() => {
+    const onKey = (e) => onKeyRef.current(e);
+    const onActivity = () => {
+      lastActivityRef.current = Date.now();
+      if (!unlockedRef.current) {
+        unlockedRef.current = true;
+        setUnlocked(true);
       }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [phase, riddle, canRecord, showResult, nextRiddle, repeat, conjureRiddle]);
+    window.addEventListener("keydown", onActivity);
+    window.addEventListener("pointerdown", onActivity);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onActivity);
+      window.removeEventListener("pointerdown", onActivity);
+    };
+  }, []);
 
   // ---- Render ----
+  const operatorProps = {
+      onCorrect: () => showResult(true),
+      onWrong: () => showResult(false),
+      onNext: nextRiddle,
+      onRepeat: repeat,
+      onConjure: conjureRiddle,
+      onToggleCamera: () => setCameraOn((c) => !c),
+      onToggleLevel: toggleLevel,
+      onHint: () => riddle?.hint && speak(riddle.hint),
+      riddleNumber: index + 1,
+      total: riddles.length,
+      level,
+      camera: {
+        on: cameraOn,
+        status: presence.status,
+        near: presence.near,
+        seen: presence.seen,
+        faceSize: presence.faceSize,
+      },
+    };
+
+  const corner = (
+    <>
+      {presence.status === "ready" && <div className="cam-dot">📷</div>}
+      {!unlocked && phase === PHASE.ATTRACT && (
+        <div className="voice-hint">🔇 click once (or press any key) to turn on Gus's voice</div>
+      )}
+    </>
+  );
+
   if (phase === PHASE.ATTRACT) {
     return (
       <div className="stage attract">
         <div className="bats" aria-hidden="true">🦇🕸️🎃👻🕷️</div>
-        <Ghost mood="idle" />
+        <Ghost mood={ghostMood} />
         <h1>Boo! I'm Gus the Ghost 👻</h1>
-        <p className="subtitle">Answer my spooky riddles for a treat!</p>
-        <button className="big-btn start" onClick={handleStart} disabled={!riddles.length}>
-          {riddles.length ? "Start the Game!" : "Summoning the ghost..."}
+        {greeting ? (
+          <p className="greeting">{greeting}</p>
+        ) : (
+          <p className="subtitle">Answer my spooky riddles for a treat!</p>
+        )}
+        <button className="big-btn start" onClick={handleStart} disabled={!ready}>
+          {ready ? "Start the Game!" : "Summoning the ghost..."}
         </button>
         {status && <p className="status">{status}</p>}
+        <HowItWorks cameraOn={presence.status === "ready"} />
+        {corner}
+        <OperatorBar {...operatorProps} />
+      </div>
+    );
+  }
+
+  if (phase === PHASE.LEVEL) {
+    return (
+      <div className="stage">
+        <div className="bats" aria-hidden="true">🦇🕸️🎃👻🕷️</div>
+        <Ghost mood="talking" />
+        <div className="riddle-card">
+          <p className="question">Are you a little ghost, or a big ghost?</p>
+        </div>
+        <div className="level-buttons">
+          <button className="level-btn little" onClick={() => chooseLevel("little")}>
+            🐣 I'm Little
+            <small>(press 1)</small>
+          </button>
+          <button className="level-btn big" onClick={() => chooseLevel("big")}>
+            🧒 I'm Big
+            <small>(press 2)</small>
+          </button>
+        </div>
+        {status && <p className="status">{status}</p>}
+        {corner}
+        <OperatorBar {...operatorProps} />
       </div>
     );
   }
@@ -305,13 +533,14 @@ export default function App() {
 
           {showChoices && (
             <div className="choices">
-              {(riddle?.choices || []).map((c) => (
+              {(riddle?.choices || []).map((c, i) => (
                 <button
                   key={c}
-                  className="choice-btn"
+                  className={`choice-btn choice-btn--${i}`}
                   disabled={wrongChoices.includes(c)}
                   onClick={() => tapAnswer(c)}
                 >
+                  <span className="num">{i + 1}</span>
                   {c}
                 </button>
               ))}
@@ -333,16 +562,9 @@ export default function App() {
       )}
       {status && <p className="status">{status}</p>}
 
-      <OperatorBar
-        onCorrect={() => showResult(true)}
-        onWrong={() => showResult(false)}
-        onNext={nextRiddle}
-        onRepeat={repeat}
-        onConjure={conjureRiddle}
-        onHint={() => riddle?.hint && speak(riddle.hint)}
-        riddleNumber={index + 1}
-        total={riddles.length}
-      />
+      {corner}
+      <OperatorBar {...operatorProps} />
     </div>
   );
+
 }

@@ -351,3 +351,85 @@ h1 {
   color: #8dffb5;
   text-shadow: 0 0 12px rgba(80, 255, 150, 0.6);
 }
+
+/* ---------- Eyes follow the person (CSS vars set by usePresence) ---------- */
+.ghost__eyes {
+  transform: translate(calc(var(--gaze-x, 0) * 8px), calc(var(--gaze-y, 0) * 5px));
+  transition: transform 0.15s linear;
+}
+
+/* ---------- Attract extras ---------- */
+.how-it-works {
+  position: absolute;
+  bottom: 4vh;
+  margin: 0;
+  padding: 0 6vw;
+  font-size: clamp(1rem, 2.4vw, 1.6rem);
+  color: #d7c6ff;
+  animation: fadeInOut 7s ease-in-out;
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(8px); }
+  10%, 88% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; }
+}
+.greeting {
+  font-size: clamp(1.4rem, 3.6vw, 2.4rem);
+  margin: 0;
+  max-width: 1000px;
+  color: var(--orange-bright);
+  text-shadow: 0 0 16px rgba(255, 122, 26, 0.6);
+  animation: pop 0.4s ease;
+}
+.cam-dot {
+  position: fixed;
+  bottom: 8px;
+  left: 12px;
+  font-size: 0.8rem;
+  opacity: 0.35;
+}
+.voice-hint {
+  position: fixed;
+  top: 8px;
+  left: 12px;
+  font-size: 0.8rem;
+  opacity: 0.4;
+}
+
+/* ---------- Level picker ---------- */
+.level-buttons {
+  display: flex;
+  gap: 3vw;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.level-btn {
+  font-size: clamp(1.4rem, 3.6vw, 2.4rem);
+  font-weight: 700;
+  padding: 2.4vh 4vw;
+  border-radius: 28px;
+  border: 4px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  cursor: pointer;
+}
+.level-btn.little { background: linear-gradient(180deg, #ff9838, #e0620c); }
+.level-btn.big { background: linear-gradient(180deg, #8a5cff, #5a2fb0); }
+.level-btn small { display: block; font-size: 0.55em; font-weight: 400; opacity: 0.9; margin-top: 0.4vh; }
+.level-btn:active { transform: scale(0.96); }
+
+/* Number badges + colors on choices (match physical arcade buttons) */
+.choice-btn { display: inline-flex; align-items: center; gap: 1.2vw; }
+.choice-btn .num {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1a0a2e;
+  font-size: 0.9em;
+}
+.choice-btn--0 { border-color: #ff9838; }
+.choice-btn--1 { border-color: #8a5cff; }
+.choice-btn--2 { border-color: #5cff8a; }
+.choice-btn--3 { border-color: #5cc8ff; }

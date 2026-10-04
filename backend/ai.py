@@ -30,6 +30,25 @@ WORD_POOL: dict[str, list[str]] = {
     "nature": ["moon", "star", "pumpkin", "autumn leaf", "tree", "cloud"],
 }
 
+# Words simple enough for the youngest players. Big kids draw from everything.
+LITTLE_WORDS = {
+    "bat", "spider", "owl", "black cat", "frog", "ghost", "witch", "cupcake",
+    "lollipop", "candy corn", "broom", "candle", "moon", "star", "pumpkin", "tree",
+    "cloud",
+}
+
+LEVEL_STYLE = {
+    "little": (
+        "kids aged 4 to 6",
+        "Use very simple words and short sentences. Describe something a small child "
+        "can see, touch, or eat.",
+    ),
+    "big": (
+        "kids aged 7 to 10",
+        "Make it a clever clue that takes a moment of thought, with 2 to 3 short lines.",
+    ),
+}
+
 # Anything in a generated riddle matching this is rejected (kid-safe filter).
 _BLOCKED = re.compile(
     r"\b(blood|bloody|kill|killed|die|dead|death|murder|gun|knife|weapon|"
@@ -66,7 +85,7 @@ def _clean(text: str) -> str:
     return re.sub(r"\s+", " ", str(text).replace("\\n", " ")).strip()
 
 
-def _make_riddle_once(avoid: list[str] | None = None) -> dict | None:
+def _make_riddle_once(avoid: list[str] | None = None, level: str = "big") -> dict | None:
     """Pick an answer + distractors from the pool; ask Ollama to write the riddle.
 
     Returns {question, answer, choices[3], hint} or None if generation failed
@@ -75,14 +94,18 @@ def _make_riddle_once(avoid: list[str] | None = None) -> dict | None:
     avoid_l = {a.lower() for a in (avoid or [])}
     cats = list(WORD_POOL)
     cat = random.choice(cats)
-    options = [w for w in WORD_POOL[cat] if w not in avoid_l] or WORD_POOL[cat]
+    cat_words = WORD_POOL[cat]
+    if level == "little":
+        cat_words = [w for w in cat_words if w in LITTLE_WORDS] or cat_words
+    options = [w for w in cat_words if w not in avoid_l] or cat_words
     answer = random.choice(options)
     other = [c for c in cats if c != cat]
     wrong = [random.choice(WORD_POOL[c]) for c in random.sample(other, 2)]
 
+    ages, style = LEVEL_STYLE.get(level, LEVEL_STYLE["big"])
     prompt = (
-        "You write riddles for kids aged 4 to 8 at a friendly Halloween carnival. "
-        f"Write ONE short rhyming riddle (2 lines) whose answer is: {answer}. "
+        f"You write riddles for {ages} at a friendly Halloween carnival. "
+        f"Write ONE short rhyming riddle whose answer is: {answer}. {style} "
         "Describe real, true things about it using simple words. It must clearly be "
         f"{answer} and nothing else. Never say the word \"{answer}\" in the riddle. "
         "Keep it silly and fun, never scary, gory, or violent.\n"
@@ -130,18 +153,25 @@ def _make_riddle_once(avoid: list[str] | None = None) -> dict | None:
     }
 
 
-def make_riddle(avoid: list[str] | None = None, attempts: int = 4) -> dict | None:
+def make_riddle(avoid: list[str] | None = None, level: str = "big", attempts: int = 4) -> dict | None:
     """Retry generation a few times; validation rejects a fair share of tries."""
     for _ in range(attempts):
-        riddle = _make_riddle_once(avoid)
+        riddle = _make_riddle_once(avoid, level)
         if riddle:
             return riddle
     return None
 
 
 def make_reactions(kind: str, n: int = 6) -> list[str]:
-    """Ask Ollama for varied ghost lines. kind is 'win' or 'lose'."""
-    if kind == "win":
+    """Ask Ollama for varied ghost lines. kind is 'win', 'lose' or 'greet'."""
+    if kind == "greet":
+        brief = (
+            "a child just walked up to the booth. Each line must be a warm, "
+            "playful hello that invites them to play a spooky riddle game by "
+            'tapping Start, under 16 words, and must include the word "play" or '
+            '"riddle". Example: "Boo! Hello there! Want to play a spooky riddle game?"'
+        )
+    elif kind == "win":
         brief = (
             "a kid just answered a riddle CORRECTLY. Each line must be excited, "
             "under 14 words, and must tell the child to grab a treat (use the word "
@@ -172,6 +202,8 @@ def make_reactions(kind: str, n: int = 6) -> list[str]:
         if not (4 <= len(line) <= 110) or _BLOCKED.search(line):
             continue
         if kind == "win" and "treat" not in line.lower():
+            continue
+        if kind == "greet" and not any(w in line.lower() for w in ("play", "riddle")):
             continue
         good.append(line)
     return good

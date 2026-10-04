@@ -33,6 +33,41 @@ Tip: run `ollama serve` before the carnival; the model stays loaded for 30 minut
 
 ---
 
+## 🎚️ Age levels
+
+After **Start**, Gus asks *"Are you a little ghost, or a big ghost?"*
+- **Little** (ages ~4–6): simpler riddles and just **2 answer choices**.
+- **Big** (ages ~7–10): trickier riddles and **3 choices**.
+
+AI riddles (`G`) follow the current level. Operators can switch with **`L`**.
+
+## 🔘 Physical buttons / keyboard
+
+Everything works with number keys, so a keyboard or USB arcade buttons work if
+your screen isn't touch. Answer choices show numbered, color-coded badges
+(1 orange, 2 purple, 3 green). Arcade-button encoders just send keys `1`/`2`/`3`.
+`1` (or Enter) also presses **Start** and **Next Riddle**; on the level screen
+`1` = Little, `2` = Big. `Esc` returns to the attract screen.
+
+## 👀 Optional: camera greeting
+
+If a **webcam** is attached, Gus notices when someone walks up, says hello (an
+AI-written line), invites them to play, and his **eyes follow them**. If
+everyone walks away mid-game for a minute, he returns to the attract screen.
+No webcam? Nothing breaks — the feature just stays off.
+
+- Face detection runs **inside the browser**; images are never saved or sent
+  anywhere. The model and runtime are bundled, so it works offline.
+- Stand-near distance: add `?near=0.15` to the URL for "must be closer"
+  (default `0.12`; the operator bar shows the live face size). `?camera=0`
+  disables it; `V` toggles it live.
+- Chrome only allows speech after one click/keypress; until then Gus greets
+  with text only (a small 🔇 hint appears in the corner).
+- Suggested table sign: *"Gus's camera only notices that someone is nearby.
+  Nothing is recorded or saved."*
+
+---
+
 Everything runs **locally on your computer** — no cloud, no internet required at
 the booth.
 
@@ -109,6 +144,9 @@ anytime:
 | `R` | **Repeat** / re-ask the current riddle |
 | `H` | Speak the **hint** |
 | `G` | Have **AI write a brand-new riddle** and jump to it |
+| `L` | Switch **little/big** level |
+| `V` | Camera greeting on/off |
+| `Esc` | Back to the attract screen |
 | `T` | Toggle the choices (voice mode only) |
 | `` ` `` | Show/hide the operator bar |
 
@@ -186,6 +224,10 @@ halloween_game/
         ├── App.jsx        # game flow + phases
         ├── Ghost.jsx      # animated SVG ghost (idle/talking/happy/sad)
         ├── OperatorBar.jsx# hidden operator controls
+        ├── HowItWorks.jsx # rotating Innovation Lab messages on the attract screen
+        ├── usePresence.js # webcam presence + eye tracking (optional)
+        ├── presenceTracker.js # near/seen logic (npm test)
+        ├── faceDetector.js# MediaPipe face detector wrapper
         ├── voice.js       # ghost text-to-speech
         ├── recorder.js    # push-to-talk mic capture
         └── styles.css

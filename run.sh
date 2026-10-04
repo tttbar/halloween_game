@@ -24,10 +24,8 @@ cleanup() { echo; echo "Stopping..."; kill "$BACK" 2>/dev/null || true; kill "$F
 trap cleanup EXIT INT TERM
 
 # --- Frontend ---
-if [ ! -d frontend/node_modules ]; then
-  echo "🎃 Installing frontend dependencies..."
-  ( cd frontend && npm install )
-fi
+echo "🎃 Checking frontend dependencies..."
+( cd frontend && npm install --prefer-offline --no-audit --no-fund )
 
 if [ "$MODE" = "kiosk" ]; then
   echo "🎃 Building + serving frontend on http://localhost:4173 ..."

@@ -33,7 +33,7 @@ _RIDDLES: list[dict] = json.loads(RIDDLES_PATH.read_text())["riddles"]
 _BY_ID: dict[str, dict] = {r["id"]: r for r in _RIDDLES}
 
 # ---- AI extras (all optional; the booth works fine with Ollama off) ----
-_REACTIONS: dict[str, list[str]] = {"win": [], "lose": []}
+_REACTIONS: dict[str, list[str]] = {"win": [], "lose": [], "greet": []}
 _REACTIONS_MAX = 24
 _refresh_lock = threading.Lock()
 _ai_counter = 0
@@ -45,7 +45,7 @@ def _refresh_reactions() -> None:
     if not _refresh_lock.acquire(blocking=False):
         return
     try:
-        for kind in ("win", "lose"):
+        for kind in ("win", "lose", "greet"):
             fresh = ai.make_reactions(kind)
             merged = list(dict.fromkeys(fresh + _REACTIONS[kind]))
             _REACTIONS[kind] = merged[:_REACTIONS_MAX]
@@ -71,15 +71,23 @@ app.add_middleware(
 )
 
 
-def _public_riddle(r: dict) -> dict:
-    """Strip answers before sending to the browser."""
+def _public_riddle(r: dict, level: str | None = None) -> dict:
+    """Strip answers before sending to the browser.
+
+    Little kids get just 2 choices (the right one plus one wrong one).
+    """
     choices = list(r.get("choices", []))
+    if level == "little" and len(choices) > 2:
+        right = next((c for c in choices if grade_tap(r["answers"], c)["correct"]), choices[0])
+        wrong = [c for c in choices if c != right]
+        choices = [right, random.choice(wrong)]
     random.shuffle(choices)
     return {
         "id": r["id"],
         "question": r["question"],
         "choices": choices,
         "hint": r.get("hint", ""),
+        "level": r.get("level", "big"),
     }
 
 
@@ -93,17 +101,20 @@ def health() -> dict:
 
 
 @app.get("/api/riddles")
-def riddles() -> dict:
-    return {"riddles": [_public_riddle(r) for r in _RIDDLES]}
+def riddles(level: str | None = None) -> dict:
+    """Riddle bank; with ?level=little|big only that level (little = 2 choices)."""
+    pool = [r for r in _RIDDLES if level not in ("little", "big") or r.get("level") == level]
+    return {"riddles": [_public_riddle(r, level) for r in pool]}
 
 
 @app.post("/api/riddles/generate")
-def generate_riddle() -> dict:
+def generate_riddle(level: str = "big") -> dict:
     """Have Ollama write a brand-new riddle. 503 if it can't (UI keeps going)."""
     global _ai_counter
     # Don't repeat answers already in the bank or recently generated.
     avoid = [a for r in _RIDDLES for a in r["answers"]] + _recent_ai_answers
-    made = ai.make_riddle(avoid)
+    level = level if level in ("little", "big") else "big"
+    made = ai.make_riddle(avoid, level)
     if made is None:
         raise HTTPException(status_code=503, detail="Could not conjure a riddle")
     _ai_counter += 1
@@ -114,11 +125,12 @@ def generate_riddle() -> dict:
         "answers": [made["answer"].lower()],
         "choices": made["choices"],
         "hint": made["hint"],
+        "level": level,
     }
     _BY_ID[rid] = record
     _recent_ai_answers.append(made["answer"].lower())
     del _recent_ai_answers[:-10]
-    return {"riddle": {**_public_riddle(record), "ai": True}}
+    return {"riddle": {**_public_riddle(record, level), "ai": True}}
 
 
 @app.get("/api/reactions")

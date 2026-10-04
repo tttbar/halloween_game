@@ -3,107 +3,375 @@
     {
       "id": "r01",
       "question": "I come out at night and glow in the sky. I am big and round and watch from up high. What am I?",
-      "answers": ["the moon", "moon", "full moon"],
-      "choices": ["The Moon", "A Pumpkin", "A Star"],
-      "hint": "You see me in the dark sky."
+      "answers": [
+        "the moon",
+        "moon",
+        "full moon"
+      ],
+      "choices": [
+        "The Moon",
+        "A Pumpkin",
+        "A Star"
+      ],
+      "hint": "You see me in the dark sky.",
+      "level": "little"
     },
     {
       "id": "r02",
       "question": "I am orange and round and carved with a face. A candle inside lights up my space. What am I?",
-      "answers": ["pumpkin", "a pumpkin", "jack o lantern", "jack-o-lantern", "jackolantern"],
-      "choices": ["A Pumpkin", "A Ghost", "A Cat"],
-      "hint": "You find me in a pumpkin patch."
+      "answers": [
+        "pumpkin",
+        "a pumpkin",
+        "jack o lantern",
+        "jack-o-lantern",
+        "jackolantern"
+      ],
+      "choices": [
+        "A Pumpkin",
+        "A Ghost",
+        "A Cat"
+      ],
+      "hint": "You find me in a pumpkin patch.",
+      "level": "little"
     },
     {
       "id": "r03",
       "question": "I say boo and float in the air. I am white and spooky but I don't have hair. What am I?",
-      "answers": ["ghost", "a ghost", "the ghost"],
-      "choices": ["A Ghost", "A Witch", "A Bat"],
-      "hint": "I like to say Boo!"
+      "answers": [
+        "ghost",
+        "a ghost",
+        "the ghost"
+      ],
+      "choices": [
+        "A Ghost",
+        "A Witch",
+        "A Bat"
+      ],
+      "hint": "I like to say Boo!",
+      "level": "little"
     },
     {
       "id": "r04",
       "question": "I have a pointy hat and fly on a broom. I stir a big pot in a dark little room. What am I?",
-      "answers": ["witch", "a witch", "the witch"],
-      "choices": ["A Witch", "A Spider", "A Skeleton"],
-      "hint": "I fly on a broomstick."
+      "answers": [
+        "witch",
+        "a witch",
+        "the witch"
+      ],
+      "choices": [
+        "A Witch",
+        "A Spider",
+        "A Skeleton"
+      ],
+      "hint": "I fly on a broomstick.",
+      "level": "little"
     },
     {
       "id": "r05",
       "question": "I have eight long legs and I spin a web. I like to hide where the shadows are spread. What am I?",
-      "answers": ["spider", "a spider", "the spider"],
-      "choices": ["A Spider", "A Ghost", "A Pumpkin"],
-      "hint": "I spin a sticky web."
+      "answers": [
+        "spider",
+        "a spider",
+        "the spider"
+      ],
+      "choices": [
+        "A Spider",
+        "A Ghost",
+        "A Pumpkin"
+      ],
+      "hint": "I spin a sticky web.",
+      "level": "little"
     },
     {
       "id": "r06",
       "question": "I fly in the night and I squeak when I call. I hang upside down on a cave's dark wall. What am I?",
-      "answers": ["bat", "a bat", "the bat"],
-      "choices": ["A Bat", "An Owl", "A Cat"],
-      "hint": "I hang upside down."
+      "answers": [
+        "bat",
+        "a bat",
+        "the bat"
+      ],
+      "choices": [
+        "A Bat",
+        "An Owl",
+        "A Cat"
+      ],
+      "hint": "I hang upside down.",
+      "level": "little"
     },
     {
       "id": "r07",
       "question": "I am black with green eyes and a long swishy tail. On Halloween night I let out a wail. What am I?",
-      "answers": ["cat", "a cat", "black cat", "a black cat"],
-      "choices": ["A Black Cat", "A Dog", "A Bat"],
-      "hint": "I say meow."
+      "answers": [
+        "cat",
+        "a cat",
+        "black cat",
+        "a black cat"
+      ],
+      "choices": [
+        "A Black Cat",
+        "A Dog",
+        "A Bat"
+      ],
+      "hint": "I say meow.",
+      "level": "little"
     },
     {
       "id": "r08",
       "question": "I am made all of bones with no skin on me. I rattle and dance for the kids to see. What am I?",
-      "answers": ["skeleton", "a skeleton", "the skeleton", "bones"],
-      "choices": ["A Skeleton", "A Mummy", "A Ghost"],
-      "hint": "I am made of bones."
+      "answers": [
+        "skeleton",
+        "a skeleton",
+        "the skeleton",
+        "bones"
+      ],
+      "choices": [
+        "A Skeleton",
+        "A Mummy",
+        "A Ghost"
+      ],
+      "hint": "I am made of bones.",
+      "level": "big"
     },
     {
       "id": "r09",
       "question": "I am wrapped head to toe in white, dusty rags. I walk very slow from an old pyramid's crags. What am I?",
-      "answers": ["mummy", "a mummy", "the mummy"],
-      "choices": ["A Mummy", "A Witch", "A Spider"],
-      "hint": "I am wrapped in bandages."
+      "answers": [
+        "mummy",
+        "a mummy",
+        "the mummy"
+      ],
+      "choices": [
+        "A Mummy",
+        "A Witch",
+        "A Spider"
+      ],
+      "hint": "I am wrapped in bandages.",
+      "level": "big"
     },
     {
       "id": "r10",
       "question": "You knock on a door and you shout out with glee. Two magic words and they give sweets to thee. What do you say?",
-      "answers": ["trick or treat", "trick-or-treat"],
-      "choices": ["Trick or Treat", "Happy Birthday", "Good Night"],
-      "hint": "You say it to get candy."
+      "answers": [
+        "trick or treat",
+        "trick-or-treat"
+      ],
+      "choices": [
+        "Trick or Treat",
+        "Happy Birthday",
+        "Good Night"
+      ],
+      "hint": "You say it to get candy.",
+      "level": "big"
     },
     {
       "id": "r11",
       "question": "I am sweet and I come in a wrapper so bright. Kids fill up a bag with me on Halloween night. What am I?",
-      "answers": ["candy", "the candy", "sweets", "a candy", "chocolate"],
-      "choices": ["Candy", "A Pumpkin", "A Ghost"],
-      "hint": "You eat me and I am sweet."
+      "answers": [
+        "candy",
+        "the candy",
+        "sweets",
+        "a candy",
+        "chocolate"
+      ],
+      "choices": [
+        "Candy",
+        "A Pumpkin",
+        "A Ghost"
+      ],
+      "hint": "You eat me and I am sweet.",
+      "level": "little"
     },
     {
       "id": "r12",
       "question": "I hoot in the dark from a tall, bare tree. My big round eyes see you but you can't see me. What am I?",
-      "answers": ["owl", "an owl", "the owl"],
-      "choices": ["An Owl", "A Bat", "A Cat"],
-      "hint": "I say hoot hoot."
+      "answers": [
+        "owl",
+        "an owl",
+        "the owl"
+      ],
+      "choices": [
+        "An Owl",
+        "A Bat",
+        "A Cat"
+      ],
+      "hint": "I say hoot hoot.",
+      "level": "little"
     },
     {
       "id": "r13",
       "question": "You wear me at night so no one knows who you are. A hero, a monster, a princess, a star. What am I?",
-      "answers": ["costume", "a costume", "the costume", "costumes", "a mask", "mask"],
-      "choices": ["A Costume", "A Candle", "A Broom"],
-      "hint": "You dress up in me."
+      "answers": [
+        "costume",
+        "a costume",
+        "the costume",
+        "costumes",
+        "a mask",
+        "mask"
+      ],
+      "choices": [
+        "A Costume",
+        "A Candle",
+        "A Broom"
+      ],
+      "hint": "You dress up in me.",
+      "level": "big"
     },
     {
       "id": "r14",
       "question": "I am a small flame that flickers and sways. Inside a pumpkin I glow for days. What am I?",
-      "answers": ["candle", "a candle", "the candle", "a flame", "flame"],
-      "choices": ["A Candle", "The Moon", "A Star"],
-      "hint": "I give light and I am made of wax."
+      "answers": [
+        "candle",
+        "a candle",
+        "the candle",
+        "a flame",
+        "flame"
+      ],
+      "choices": [
+        "A Candle",
+        "The Moon",
+        "A Star"
+      ],
+      "hint": "I give light and I am made of wax.",
+      "level": "big"
     },
     {
       "id": "r15",
       "question": "I twinkle up high in the dark Halloween sky. The ghosts and the bats all fly me by. What am I?",
-      "answers": ["star", "a star", "the star", "stars"],
-      "choices": ["A Star", "A Pumpkin", "A Spider"],
-      "hint": "I twinkle in the night sky."
+      "answers": [
+        "star",
+        "a star",
+        "the star",
+        "stars"
+      ],
+      "choices": [
+        "A Star",
+        "A Pumpkin",
+        "A Spider"
+      ],
+      "hint": "I twinkle in the night sky.",
+      "level": "little"
+    },
+    {
+      "id": "r16",
+      "question": "I am big, black, and round, and I bubble and brew. A witch stirs her potions inside me, it's true. What am I?",
+      "answers": [
+        "cauldron",
+        "a cauldron",
+        "the cauldron",
+        "witch's pot"
+      ],
+      "choices": [
+        "A Cauldron",
+        "A Candle",
+        "A Frog"
+      ],
+      "hint": "Witches cook their potions in me.",
+      "level": "big"
+    },
+    {
+      "id": "r17",
+      "question": "I'm stuffed full of straw and I stand in a field. I keep hungry crows away so the corn can yield. What am I?",
+      "answers": [
+        "scarecrow",
+        "a scarecrow",
+        "the scarecrow"
+      ],
+      "choices": [
+        "A Scarecrow",
+        "A Ghost",
+        "A Cupcake"
+      ],
+      "hint": "I stand in the corn field.",
+      "level": "big"
+    },
+    {
+      "id": "r18",
+      "question": "I have a long wooden handle and bristles below. I sweep up the floor, and witches fly on me, you know. What am I?",
+      "answers": [
+        "broom",
+        "a broom",
+        "the broom",
+        "broomstick",
+        "a broomstick"
+      ],
+      "choices": [
+        "A Broom",
+        "A Bat",
+        "A Mask"
+      ],
+      "hint": "Witches fly on me.",
+      "level": "big"
+    },
+    {
+      "id": "r19",
+      "question": "I wear a long black cape with a collar up high. I have pointy teeth and I sleep when the sun's in the sky. Who am I?",
+      "answers": [
+        "vampire",
+        "a vampire",
+        "the vampire",
+        "dracula"
+      ],
+      "choices": [
+        "A Vampire",
+        "A Scarecrow",
+        "An Owl"
+      ],
+      "hint": "I wear a cape and have pointy teeth.",
+      "level": "big"
+    },
+    {
+      "id": "r20",
+      "question": "I'm big and old with creaky floors. Cobwebs hang from my squeaky doors. Ghosts like to live inside of me. What am I?",
+      "answers": [
+        "haunted house",
+        "a haunted house",
+        "the haunted house",
+        "house",
+        "a house"
+      ],
+      "choices": [
+        "A Haunted House",
+        "A Frog",
+        "A Candle"
+      ],
+      "hint": "I'm a spooky place where ghosts live.",
+      "level": "big"
+    },
+    {
+      "id": "r21",
+      "question": "When you go trick-or-treating in the dark, I make a beam of light. Just push my button and I shine bright. What am I?",
+      "answers": [
+        "flashlight",
+        "a flashlight",
+        "the flashlight",
+        "torch"
+      ],
+      "choices": [
+        "A Flashlight",
+        "A Cupcake",
+        "A Spider"
+      ],
+      "hint": "I help you see in the dark.",
+      "level": "big"
+    },
+    {
+      "id": "r22",
+      "question": "I'm tall and black and pointy, and I sit on a head. A witch wears me when she flies, it's said. What am I?",
+      "answers": [
+        "hat",
+        "a hat",
+        "witch hat",
+        "a witch hat",
+        "pointy hat",
+        "a pointy hat"
+      ],
+      "choices": [
+        "A Witch Hat",
+        "A Pumpkin",
+        "A Frog"
+      ],
+      "hint": "You wear me on your head.",
+      "level": "big"
     }
   ]
 }
