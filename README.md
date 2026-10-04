@@ -49,6 +49,14 @@ your screen isn't touch. Answer choices show numbered, color-coded badges
 `1` (or Enter) also presses **Start** and **Next Riddle**; on the level screen
 `1` = Little, `2` = Big. `Esc` returns to the attract screen.
 
+## 📣 Greeting without a camera
+
+On the welcome screen Gus also **calls out an invitation by himself** about
+every 45 seconds ("Psst! Want to play a riddle?"), using the AI-written
+greeting lines. He stays quiet while someone is touching the controls. Press
+**`M`** to mute/unmute him (or start with `?bark=0`). When a visitor wanders up,
+press **`W`** and Gus greets them right away.
+
 ## 👀 Optional: camera greeting
 
 If a **webcam** is attached, Gus notices when someone walks up, says hello (an
@@ -146,7 +154,9 @@ anytime:
 | `G` | Have **AI write a brand-new riddle** and jump to it |
 | `L` | Switch **little/big** level |
 | `V` | Camera greeting on/off |
-| `Esc` | Back to the attract screen |
+| `Esc` | **Back to the welcome screen** (or use 🏠 in the operator bar) — do this after each kid |
+| `W` | **Wave**: Gus greets whoever is walking up (welcome screen) |
+| `M` | Timed "barker" on/off |
 | `T` | Toggle the choices (voice mode only) |
 | `` ` `` | Show/hide the operator bar |
 

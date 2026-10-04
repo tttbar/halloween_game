@@ -42,6 +42,11 @@ const VOICE_ENABLED = params.get("voice") === "1";
 const CAMERA_DEFAULT = params.get("camera") !== "0";
 const NEAR_SIZE = Number(params.get("near")) || 0.12;
 
+// The "barker": in attract mode Gus calls out an invitation every so often.
+// ?bark=0 turns it off; the operator can also toggle it with M.
+const BARK_DEFAULT = params.get("bark") !== "0";
+const BARK_EVERY_MS = 45000;
+
 const GREET_COOLDOWN_MS = 30000;
 const WALK_AWAY_MS = 60000;
 
@@ -88,6 +93,7 @@ export default function App() {
   const [greeting, setGreeting] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [cameraOn, setCameraOn] = useState(CAMERA_DEFAULT);
+  const [barkOn, setBarkOn] = useState(BARK_DEFAULT);
   const pttRef = useRef(null);
   const unlockedRef = useRef(false);
   const lastGreetRef = useRef(-Infinity);
@@ -288,17 +294,33 @@ export default function App() {
 
   const repeat = useCallback(() => riddle && askRiddle(riddle), [riddle, askRiddle]);
 
-  // ---- Camera: greet someone who walks up ----
-  useEffect(() => {
-    if (!presence.near || phase !== PHASE.ATTRACT) return;
-    const now = Date.now();
-    if (now - lastGreetRef.current < GREET_COOLDOWN_MS) return;
-    lastGreetRef.current = now;
+  // ---- Greetings: camera, operator wave (W), and the timed barker ----
+  const greet = useCallback(() => {
+    lastGreetRef.current = Date.now();
     const line = pick([...aiLines.greet, ...GREET_LINES]);
     setGreeting(line);
     const clear = () => setGreeting((g) => (g === line ? "" : g));
     say(line, { onEnd: () => setTimeout(clear, 5000) });
-  }, [presence.near, phase, say]);
+  }, [say]);
+
+  // Someone walked up (camera).
+  useEffect(() => {
+    if (!presence.near || phase !== PHASE.ATTRACT) return;
+    if (Date.now() - lastGreetRef.current < GREET_COOLDOWN_MS) return;
+    greet();
+  }, [presence.near, phase, greet]);
+
+  // Timed barker: only when nobody is interacting and Gus hasn't just spoken.
+  useEffect(() => {
+    if (!barkOn || phase !== PHASE.ATTRACT) return undefined;
+    const t = setInterval(() => {
+      const now = Date.now();
+      const quiet = now - lastGreetRef.current >= BARK_EVERY_MS;
+      const untouched = now - lastActivityRef.current >= 15000;
+      if (unlockedRef.current && quiet && untouched) greet();
+    }, 5000);
+    return () => clearInterval(t);
+  }, [barkOn, phase, greet]);
 
   // Eyes/greeting only make sense while someone is in view.
   useEffect(() => {
@@ -326,8 +348,12 @@ export default function App() {
       if ((digit === 1 || key === "enter") && ready) {
         e.preventDefault();
         handleStart();
+      } else if (key === "w") {
+        greet(); // operator waves Gus at someone approaching
       } else if (key === "v") {
         setCameraOn((c) => !c);
+      } else if (key === "m") {
+        setBarkOn((b) => !b);
       }
       return;
     }
@@ -377,6 +403,9 @@ export default function App() {
       case "v": // camera on/off
         setCameraOn((c) => !c);
         break;
+      case "m": // timed barker on/off
+        setBarkOn((b) => !b);
+        break;
       case "t": // toggle choices (voice mode only)
         if (canRecord) setShowChoices((s) => !s);
         break;
@@ -396,12 +425,13 @@ export default function App() {
         setUnlocked(true);
       }
     };
-    window.addEventListener("keydown", onKey);
+    // onActivity first, so the key that unlocks speech can already use it.
     window.addEventListener("keydown", onActivity);
+    window.addEventListener("keydown", onKey);
     window.addEventListener("pointerdown", onActivity);
     return () => {
-      window.removeEventListener("keydown", onKey);
       window.removeEventListener("keydown", onActivity);
+      window.removeEventListener("keydown", onKey);
       window.removeEventListener("pointerdown", onActivity);
     };
   }, []);
@@ -414,6 +444,11 @@ export default function App() {
       onRepeat: repeat,
       onConjure: conjureRiddle,
       onToggleCamera: () => setCameraOn((c) => !c),
+      onToggleBark: () => setBarkOn((b) => !b),
+      onWave: greet,
+      onHome: resetToAttract,
+      bark: barkOn,
+      attract: phase === PHASE.ATTRACT,
       onToggleLevel: toggleLevel,
       onHint: () => riddle?.hint && speak(riddle.hint),
       riddleNumber: index + 1,
