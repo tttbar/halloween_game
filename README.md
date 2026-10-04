@@ -25,11 +25,29 @@ falls back to the built-in riddles and lines — nothing breaks.
    written by the model ahead of time (so there's no delay) and mixed in with
    the built-in lines. Cheers always say "treat" so kids know to grab candy.
 
-One-time setup (while you have internet):
-```bash
-ollama pull llama3.1:8b
-```
+These need an AI model that you install yourself — see
+[AI models (not included)](#-ai-models-not-included--install-them-yourself) below.
 Tip: run `ollama serve` before the carnival; the model stays loaded for 30 minutes.
+
+---
+
+## 🧠 AI models (not included — install them yourself)
+
+**This repository contains no AI models or model weights.** The code only talks
+to models that run on your own computer, and you download them separately.
+Each model has its own license and terms; please read and accept them on the
+model's page before using it.
+
+| Used for | Model | Needed? | How to install |
+|----------|-------|---------|----------------|
+| Writing new riddles (`G` key) and the ghost's cheers / greetings | `llama3.1:8b` via [Ollama](https://ollama.com) | Optional — the game works without it, using built-in riddles and lines | Install Ollama, then `ollama pull llama3.1:8b` |
+| Judging spoken answers (voice mode only) | `llama3.2:3b` via Ollama | Only for `?voice=1` | `ollama pull llama3.2:3b` |
+| Speech-to-text (voice mode only) | Whisper `base.en`, run by [`faster-whisper`](https://github.com/SYSTRAN/faster-whisper) | Only for `?voice=1` | `backend/.venv/bin/pip install -r backend/requirements-voice.txt` — the Whisper model downloads automatically the first time voice mode runs |
+| Gus's speaking voice | Your browser's built-in text-to-speech | Built in | Nothing to install |
+
+You can swap in other Ollama models with the `OLLAMA_WRITER_MODEL` and
+`OLLAMA_MODEL` settings (see *Tuning* below). The default mode (tap answers)
+needs **none** of these downloads.
 
 ---
 
@@ -98,12 +116,8 @@ guesswork) and you have hidden operator keys as a backup.
 ### 0. One-time prerequisites
 
 - **Python 3.10+** and **Node 18+**.
-- Nothing else is *required*. Ollama (`ollama pull llama3.1:8b`) is only needed for the AI riddle / reaction features above; Whisper is only for voice mode.
-- *Only if you want voice mode (`?voice=1`):*
-  ```bash
-  backend/.venv/bin/pip install -r backend/requirements-voice.txt
-  ollama pull llama3.2:3b
-  ```
+- Nothing else is *required*. The AI features and voice mode need models you
+  install yourself — see [AI models](#-ai-models-not-included--install-them-yourself).
 
 ### 1. Run it
 
@@ -231,3 +245,9 @@ halloween_game/
 ```
 
 Happy haunting! 🎃👻
+
+---
+
+© 2026 Toby Barrus. **All rights reserved.** This source code is published only
+so people can see how the booth works. No license is granted to copy, modify,
+or redistribute it.
